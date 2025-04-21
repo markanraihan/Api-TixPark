@@ -6,8 +6,13 @@ const authController = require('../../src/controllers/Auth/authController');
 const authMiddleware = require('../../src/middleware/authMiddleware');
 const authValidator = require('../validators/Auth/authValidator');
 
+// public routes
 router.post('/register', authValidator.registerValidator, authController.register);
 router.post('/login', authValidator.loginValidator, authController.login);
-router.get('/profile', authMiddleware.authenticate, authController.getProfile);
+
+// protected routes
+router.get('/profile', 
+  authMiddleware.authenticate, 
+  authController.getProfile);
 
 module.exports = router;

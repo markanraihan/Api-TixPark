@@ -14,8 +14,11 @@ class UserRepository {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     return await prisma.users.create({
       data: {
-        ...userData,
-        password: hashedPassword
+        name: userData.name,
+        email: userData.email,
+        password: hashedPassword,
+        role: userData.role || 'user', // Default role user
+        whatsapp: userData.whatsapp || null
       }
     });
   }
@@ -27,6 +30,7 @@ class UserRepository {
         user_id: true,
         email: true,
         name: true,
+        whatsapp: true,
         role: true,
         createdAt: true
       }

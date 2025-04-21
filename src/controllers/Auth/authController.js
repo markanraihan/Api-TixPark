@@ -44,10 +44,10 @@ class AuthController {
       } catch (error) {
         res.status(404).json({
           success: false,
-          message: 'User not found'
+          message: 'User tidak ditemukan'
         });
       }
     }
-  }
+}
   
-  module.exports = new AuthController();
+module.exports = new AuthController();
