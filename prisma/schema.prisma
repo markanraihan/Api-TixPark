@@ -10,14 +10,116 @@ datasource db {
 enum Role {
   user
   staff
+  admin
 }
 
-model Users {
-  user_id         String        @id @default(uuid()) @db.VarChar(36)
-  name            String        @db.VarChar(255)
-  password        String        @db.VarChar(255)
-  email           String        @unique @db.VarChar(255)
-  whatsapp        String?       @db.VarChar(255)
-  role            Role          @default(user)
-  createdAt       DateTime      @default(now())
+enum BookingStatus {
+  reserved     // Sudah dipesan tapi belum check-in
+  active       // Sedang digunakan (sudah check-in)
+  completed    // Selesai (sudah check-out dan dibayar)
+  cancelled    // Dibatalkan sebelum check-in
+  expired      // Kadaluarsa (tidak check-in sebelum waktu tertentu)
+}
+
+model User {
+  user_id          String     @id @default(uuid()) @db.VarChar(36)
+  name             String     @db.VarChar(100)
+  email            String     @unique @db.VarChar(100)
+  password         String     @db.VarChar(255)
+  whatsapp         String     @unique @db.VarChar(20)
+  license_plate    String?    @db.VarChar(15)
+  role             Role       @default(user)
+  staff_profile    Staff?     @relation("staff_user")  // Relasi ke Staff
+  bookings         Booking[]  @relation("user_bookings")  // Relasi ke Booking
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  @@map("users")
+}
+
+model Parking {
+  parking_id       String     @id @default(uuid()) @db.VarChar(36)
+  name             String     @db.VarChar(100)
+  address          String     @db.Text
+  latitude         Float?
+  longitude        Float?
+  total_slots      Int
+  available_slots  Int
+  hourly_rate      Float      @default(5000)
+  min_rate         Float      @default(2000)
+  is_active        Boolean    @default(true)
+  slots            Slot[]
+  staff_members    Staff[]    @relation("parking_staff")
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  @@map("parkings")
+}
+
+model Slot {
+  slot_id          String     @id @default(uuid()) @db.VarChar(36)
+  parking_id       String     @db.VarChar(36)
+  parking          Parking    @relation(fields: [parking_id], references: [parking_id])
+  slot_code        String     @unique @db.VarChar(10)
+  is_available     Boolean    @default(true)
+  vehicle_type     String     @default("car") @db.VarChar(10)
+  bookings         Booking[]  @relation("slot_bookings")
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  @@index([is_available])
+  @@map("slots")
+}
+
+model Staff {
+  staff_id         String     @id @default(uuid()) @db.VarChar(36)
+  parking_id       String     @db.VarChar(36)
+  parking          Parking    @relation(fields: [parking_id], references: [parking_id], name: "parking_staff")
+  user_id          String     @unique @db.VarChar(36)
+  user             User       @relation(fields: [user_id], references: [user_id], name: "staff_user")
+  payments         Payment[]  @relation("staff_payments")
+  is_active        Boolean    @default(true)
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  @@map("staffs")
+}
+
+model Booking {
+  booking_id       String      @id @default(uuid()) @db.VarChar(36)
+  booking_code     String      @unique @db.VarChar(10)
+  user_id          String      @db.VarChar(36)
+  user             User        @relation(fields: [user_id], references: [user_id], name: "user_bookings")
+  slot_id          String      @db.VarChar(36)
+  slot             Slot        @relation(fields: [slot_id], references: [slot_id], name: "slot_bookings")
+  vehicle_type     String      @default("car") @db.VarChar(15)
+  license_plate    String      @db.VarChar(15)
+  reserve_time     DateTime
+  check_in_time    DateTime?
+  check_out_time   DateTime?
+  status           BookingStatus @default(reserved)
+  payment          Payment?     @relation("booking_payment")
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+
+  @@index([booking_code])
+  @@index([status])
+  @@index([user_id, status])
+  @@map("bookings")
+}
+
+model Payment {
+  payment_id       String      @id @default(uuid()) @db.VarChar(36)
+  booking_id       String      @unique @db.VarChar(36)
+  booking          Booking     @relation(fields: [booking_id], references: [booking_id], name: "booking_payment")
+  amount           Float
+  duration_minutes Int
+  payment_method   String      @default("cash") @db.VarChar(10)
+  staff_id         String      @db.VarChar(36)
+  staff            Staff       @relation(fields: [staff_id], references: [staff_id], name: "staff_payments")
+  paid_at          DateTime
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+
+  @@map("payments")
 }
