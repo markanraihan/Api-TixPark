@@ -1,26 +1,35 @@
-const prisma = require('../../utils/prisma')
+// src/repositories/Parking/parkingRepositories.js
+
+const prisma = require('../../utils/prisma');
 
 class ParkingRepository {
   async getAllActiveParkings() {
-    return await prisma.parking.findMany({
+    const parkings = await prisma.parking.findMany({
       where: { is_active: true },
-      select: {
-        parking_id: true,
-        name: true,
-        address: true,
-        available_slots: true,
-        total_slots: true,
-        hourly_rate: true,
-        latitude: true,
-        longitude: true
+      include: {
+        slots: {
+          select: { is_available: true }
+        }
       }
-    })
+    });
+
+    // Hitung available_slots dari slot yang available
+    return parkings.map(p => ({
+      parking_id: p.parking_id,
+      name: p.name,
+      address: p.address,
+      total_slots: p.total_slots,
+      hourly_rate: p.hourly_rate,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      available_slots: p.slots.filter(slot => slot.is_available).length
+    }));
   }
 
   async getParkingById(parkingId) {
     return await prisma.parking.findUnique({
       where: { parking_id: parkingId }
-    })
+    });
   }
 
   async getAvailableSlotsByType(parkingId, vehicleType) {
@@ -35,13 +44,13 @@ class ParkingRepository {
         slot_code: true,
         vehicle_type: true
       }
-    })
+    });
   }
 
   async createParking(parkingData) {
-    return await prisma.parking.create({
-      data: parkingData
-    })
+    // Hapus available_slots karena tidak ada di model Prisma
+    const { available_slots, ...data } = parkingData;
+    return await prisma.parking.create({ data });
   }
 
   async createSlots(parkingId, slotsData) {
@@ -49,32 +58,33 @@ class ParkingRepository {
       ...slotsData.map(slot => prisma.slot.create({
         data: {
           parking_id: parkingId,
-          slot_code: slot.slot_code,
-          vehicle_type: slot.vehicle_type || 'car',
-          is_available: true
+          slot_number: slot.slot_number,
+          vehicle_type: slot.vehicle_type,
+          is_available: slot.is_available
         }
       })),
       prisma.parking.update({
         where: { parking_id: parkingId },
         data: {
-          total_slots: { increment: slotsData.length },
-          available_slots: { increment: slotsData.length }
+          total_slots: { increment: slotsData.length }
         }
       })
-    ])
+    ]);
   }
-
+  
   async updateParking(parkingId, updateData) {
+    // Hapus available_slots jika ada di updateData
+    const { available_slots, ...data } = updateData;
     return await prisma.parking.update({
       where: { parking_id: parkingId },
-      data: updateData
-    })
+      data
+    });
   }
   
   async getParkingByName(name) {
     return await prisma.parking.findFirst({
       where: { name }
-    })
+    });
   }
 
   async getParkingWithRelations(parkingId) {
@@ -84,7 +94,7 @@ class ParkingRepository {
         slots: true,
         staff_members: true
       }
-    })
+    });
   }
 
   async deleteParking(parkingId) {
@@ -95,8 +105,8 @@ class ParkingRepository {
       prisma.parking.delete({
         where: { parking_id: parkingId }
       })
-    ])
+    ]);
   }
 }
 
-module.exports = new ParkingRepository()
+module.exports = new ParkingRepository();

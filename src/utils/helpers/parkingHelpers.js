@@ -15,15 +15,15 @@ function validateParkingInput(input) {
 }
 
 function validateSlotInput(input) {
-  const errors = []
+  const errors = [];
   
-  if (!input.slot_code) errors.push('Slot code is required')
-  if (input.slot_code.length > 10) errors.push('Slot code too long')
+  if (!input.slot_number) errors.push('Slot number is required');
+  if (input.slot_number <= 0) errors.push('Slot number must be positive');
 
   return {
     isValid: errors.length === 0,
     errors
-  }
+  };
 }
 
 module.exports = {

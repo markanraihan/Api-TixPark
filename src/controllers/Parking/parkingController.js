@@ -43,7 +43,7 @@ class ParkingController {
     }
   }
 
-  async addSlotToParking(req, res) {  // Changed from addSlotsToParking to addSlotToParking
+  async addSlotToParking(req, res) { 
     try {
       const { parkingId } = req.params
       const slotData = req.body

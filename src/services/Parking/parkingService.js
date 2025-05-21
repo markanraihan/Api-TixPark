@@ -24,16 +24,27 @@ class ParkingService {
   }
 
   async createParking(parkingData) {
-    const validation = validateParkingInput(parkingData)
+    const validation = validateParkingInput(parkingData);
     if (!validation.isValid) {
-      throw new Error(validation.errors.join(', '))
+      throw new Error(validation.errors.join(', '));
     }
 
-    // Name can be duplicated, so we don't check for existing name
-    return await parkingRepository.createParking({
+    // Create parking first
+    const parking = await parkingRepository.createParking({
       ...parkingData,
       available_slots: parkingData.total_slots // Initially all slots are available
-    })
+    });
+
+    // Generate slots automatically
+    const slotsToCreate = Array.from({ length: parkingData.total_slots }, (_, i) => ({
+      slot_number: i + 1,
+      vehicle_type: 'car', // Default vehicle type
+      is_available: true
+    }));
+
+    await parkingRepository.createSlots(parking.parking_id, slotsToCreate);
+
+    return parking;
   }
 
   async addSlotsToParking(parkingId, slotsData) {
