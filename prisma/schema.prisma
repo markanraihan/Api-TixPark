@@ -29,6 +29,7 @@ model User {
   license_plate    String?    
   role             Role       @default(user)
   bookings         Booking[]  
+  payments         Payment[]  // Add this line for the inverse relation
   created_at       DateTime   @default(now())
   updated_at       DateTime   @updatedAt
 
@@ -97,6 +98,8 @@ model Payment {
   amount           Float       
   duration_minutes Int         
   payment_method   String      @default("cash")
+  staff_id         String      
+  staff            User?       @relation(fields: [staff_id], references: [user_id])
   paid_at          DateTime    
   created_at       DateTime    @default(now())
   updated_at       DateTime    @updatedAt
